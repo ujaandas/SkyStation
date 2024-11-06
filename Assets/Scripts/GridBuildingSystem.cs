@@ -19,6 +19,7 @@ public class GridBuildingSystem : MonoBehaviour
     private Building temp;
     private Vector3 prevPos;
     private BoundsInt prevArea;
+    private bool isDragging = false;
 
     #region Unity Methods
     private void Awake()
@@ -39,36 +40,51 @@ public class GridBuildingSystem : MonoBehaviour
 
     private void Update()
     {
-        // Update grid
         if (!temp) return;
 
-        if (Input.GetMouseButtonDown(0)) {
+        // Start dragging
+        if (Input.GetMouseButtonDown(0))
+        {
             if (EventSystem.current.IsPointerOverGameObject(0)) {
                 return;
             }
 
-            if (!temp.Placed) {
-                Vector2 touchPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                Vector3Int cellPos = gridLayout.LocalToCell(touchPos);
-
-                if (prevPos != cellPos) {
-                    temp.transform.localPosition = gridLayout.CellToLocalInterpolated(cellPos + new Vector3(.5f, .5f, .5f));
-                    prevPos = cellPos;
-                    FollowBuilding();
+            isDragging = true;
+        }
+        // End dragging and place object
+        else if (Input.GetMouseButtonUp(0) && isDragging)
+        {
+            if (!temp.Placed)
+            {
+                if (temp.CanBePlaced())
+                {
+                    temp.Place();
                 }
             }
-        } else if (Input.GetKeyDown(KeyCode.Space)) {
-            if (temp.CanBePlaced()){
-                temp.Place();
-            }
-        } else if (Input.GetKeyDown(KeyCode.Escape)) {
+            isDragging = false; // Stop dragging
+        }
+        // Cancel dragging
+        else if (Input.GetKeyDown(KeyCode.Escape))
+        {
             ClearArea();
             Destroy(temp.gameObject);
+            isDragging = false;
+        }
+
+        // Update position while dragging
+        if (isDragging && !temp.Placed)
+        {
+            Vector2 touchPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector3Int cellPos = gridLayout.LocalToCell(touchPos);
+
+            if (prevPos != cellPos)
+            {
+                temp.transform.localPosition = gridLayout.CellToLocalInterpolated(cellPos + new Vector3(.5f, .5f, .5f));
+                prevPos = cellPos;
+                FollowBuilding();
+            }
         }
     }
-
-
-
     #endregion
 
     #region Tilemap Management
@@ -76,7 +92,7 @@ public class GridBuildingSystem : MonoBehaviour
         for (int i = 0; i < arr.Length; i++) {
             arr[i] = tileBases[type];
         }
-}
+    }
 
     private static TileBase[] GetTilesBlock(BoundsInt area, Tilemap tilemap) {
         TileBase[] array = new TileBase[area.size.x * area.size.y * area.size.z];
@@ -96,7 +112,6 @@ public class GridBuildingSystem : MonoBehaviour
 
         return array;
     }
-
 
     private static void SetTilesBlock(BoundsInt area, TileType type, Tilemap tilemap) {
         int size = area.size.x * area.size.y * area.size.z;
@@ -119,30 +134,33 @@ public class GridBuildingSystem : MonoBehaviour
     }
 
     private void FollowBuilding() {
-        ClearArea();
-        temp.area.position = gridLayout.WorldToCell(temp.gameObject.transform.position);
-        BoundsInt buildingArea = temp.area;
+    ClearArea();
+    temp.area.position = gridLayout.WorldToCell(temp.gameObject.transform.position);
+    BoundsInt buildingArea = temp.area;
 
-        TileBase[] baseArray = GetTilesBlock(buildingArea, MainTilemap);
-        
-        int size = baseArray.Length;
-        TileBase[] tileArray = new TileBase[size];
+    TileBase[] baseArray = GetTilesBlock(buildingArea, MainTilemap);
+    
+    int size = baseArray.Length;
+    TileBase[] tileArray = new TileBase[size];
 
-        for (int i = 0; i < size; i++) {
-            Debug.Log(baseArray[i]);
-            if (baseArray[i] == tileBases[TileType.White]) {
-                tileArray[i] = tileBases[TileType.Green];
-
-            } else {
-                // tileArray[i] = tileBases[TileType.Red];
-                FillTiles(tileArray, TileType.Red);
-                break;
-            }
+    for (int i = 0; i < size; i++)
+    {
+        Debug.Log(baseArray[i]);
+        if (baseArray[i] == tileBases[TileType.White])
+        {
+            tileArray[i] = tileBases[TileType.Green];
         }
-
-        TempTilemap.SetTilesBlock(buildingArea, tileArray);
-        prevArea = buildingArea;
+        else
+        {
+            FillTiles(tileArray, TileType.Red);
+            break;
+        }
     }
+
+    TempTilemap.SetTilesBlock(buildingArea, tileArray);
+    prevArea = buildingArea;
+    }
+
 
     public bool CanTakeArea(BoundsInt area) {
         TileBase[] baseArray = GetTilesBlock(area, MainTilemap);
