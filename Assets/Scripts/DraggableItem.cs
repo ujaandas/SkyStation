@@ -76,7 +76,7 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         Vector3 newPosition = gridBuildingSystem.gridLayout.CellToWorld(cellPosition);
 
         transform.position = newPosition;
-        area.position = cellPosition;
+        area.position = cellPosition - new Vector3Int(2, 2, 0);
 
         // Update the position of the associated image
         image.transform.position = Camera.main.WorldToScreenPoint(newPosition);
@@ -100,7 +100,7 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
             if (gridBuildingSystem.CanTakeArea(area))
             {
-                gridBuildingSystem.PlaceBuilding(cellPos, this);
+                // gridBuildingSystem.PlaceBuilding(cellPos, this);
                 Destroy(gameObject);
 
                 // Instantiate a new GameObject to represent the item in the Tilemap
@@ -111,8 +111,7 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
                     sr.sprite = image.sprite;
 
                     // Center the tilemap representation as well
-                    tilemapRepresentation.transform.position = gridBuildingSystem.gridLayout.CellToWorld(area.position) +
-                                                              gridBuildingSystem.gridLayout.cellSize / 2;
+                    tilemapRepresentation.transform.position = gridBuildingSystem.gridLayout.CellToWorld(area.position + new Vector3Int(2, 2, 0));
                 }
             }
         }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public enum TileType { Empty, White, Green, Red }
+public enum TileType { Empty, TileGrassy, TileGrassyGreen, TileGrassyRed, TileDirty, TileDirtyGreen, TileDirtyRed }
 
 public class GridBuildingSystem : MonoBehaviour
 {
@@ -18,27 +18,22 @@ public class GridBuildingSystem : MonoBehaviour
 
     private void Start()
     {
+        string tilePath = @"Tiles/";
         tileBases = new Dictionary<TileType, TileBase>
         {
             { TileType.Empty, null },
-            { TileType.White, Resources.Load<TileBase>("Tiles/TileWhite") },
-            { TileType.Green, Resources.Load<TileBase>("Tiles/TileGreen") },
-            { TileType.Red, Resources.Load<TileBase>("Tiles/TileRed") }
+            { TileType.TileGrassy, Resources.Load<TileBase>(tilePath + "TileGrassy") },
+            { TileType.TileGrassyGreen, Resources.Load<TileBase>(tilePath + "TileGrassyGreen") },
+            { TileType.TileGrassyRed, Resources.Load<TileBase>(tilePath + "TileGrassyRed") },
+            { TileType.TileDirty, Resources.Load<TileBase>(tilePath + "TileDirty") },
+            { TileType.TileDirtyGreen, Resources.Load<TileBase>(tilePath + "TileDirtyGreen") },
+            { TileType.TileDirtyRed, Resources.Load<TileBase>(tilePath + "TileDirtyRed") }
         };
 
         Debug.Log(MainTilemap == null ? "MainTilemap is null" : "MainTilemap is properly assigned");
         Debug.Log(TempTilemap == null ? "TempTilemap is null" : "TempTilemap is properly assigned");
 
-        if (MainTilemap != null)
-        {
-            foreach (var pos in MainTilemap.cellBounds.allPositionsWithin)
-            {
-                if (MainTilemap.HasTile(pos))
-                {
-                    Debug.Log($"Tile at {pos}: {MainTilemap.GetTile(pos)}");
-                }
-            }
-        }
+        foreach (var entry in tileBases) { Debug.Log($"{entry.Key}: {(entry.Value == null ? "Tile not loaded" : "Tile loaded")}"); }
     }
 
     private static TileBase[] GetTilesBlock(BoundsInt area, Tilemap tilemap)
@@ -52,20 +47,20 @@ public class GridBuildingSystem : MonoBehaviour
         return array;
     }
 
+    private static void FillTiles(TileBase[] arr, TileType type)
+    {
+        for (int i = 0; i < arr.Length; i++)
+        {
+            arr[i] = tileBases[type];
+        }
+    }
+
     private static void SetTilesBlock(BoundsInt area, TileType type, Tilemap tilemap)
     {
         var size = area.size.x * area.size.y * area.size.z;
         var tileArray = new TileBase[size];
         for (int i = 0; i < size; i++) tileArray[i] = tileBases[type];
         tilemap.SetTilesBlock(area, tileArray);
-    }
-
-    public void PlaceBuilding(Vector3Int cellPos, DraggableItem item)
-    {
-        var worldPosition = gridLayout.CellToWorld(cellPos);
-        var newBuilding = Instantiate(item.gameObject, worldPosition, Quaternion.identity).GetComponent<DraggableItem>();
-        newBuilding.Place();
-        Debug.Log($"Placed building at cell position: {cellPos}, world position: {worldPosition}");
     }
 
     public void ClearArea(BoundsInt area) => TempTilemap.SetTilesBlock(area, new TileBase[area.size.x * area.size.y * area.size.z]);
@@ -75,30 +70,74 @@ public class GridBuildingSystem : MonoBehaviour
         ClearArea(PrevArea);
         var baseArray = GetTilesBlock(draggableItem.area, MainTilemap);
         var tileArray = new TileBase[baseArray.Length];
-        var canPlace = true;
+        // var canPlace = true;
 
+        bool canPlace = true;
         for (int i = 0; i < baseArray.Length; i++)
         {
-            tileArray[i] = baseArray[i] == tileBases[TileType.White] ? tileBases[TileType.Green] : null;
-            if (baseArray[i] != tileBases[TileType.White]) canPlace = false;
+            Debug.Log($"Currently processing tile: {baseArray[i]}");
+            if (baseArray[i] == tileBases[TileType.TileGrassy])
+            {
+                tileArray[i] = tileBases[TileType.TileGrassyGreen];
+            }
+            else if (baseArray[i] == tileBases[TileType.TileDirty])
+            {
+                tileArray[i] = tileBases[TileType.TileDirtyGreen];
+            }
+            else
+            {
+                canPlace = false;
+                break;
+            }
         }
 
-        if (!canPlace) for (int i = 0; i < tileArray.Length; i++) tileArray[i] = tileBases[TileType.Red];
+        if (!canPlace)
+        {
+            FillTiles(tileArray, TileType.TileGrassyRed);
+        }
 
         TempTilemap.SetTilesBlock(draggableItem.area, tileArray);
         PrevArea = draggableItem.area;
     }
 
+
     public bool CanTakeArea(BoundsInt area)
     {
-        foreach (var tile in GetTilesBlock(area, MainTilemap))
-            if (tile != tileBases[TileType.White]) return false;
+        foreach (var pos in area.allPositionsWithin)
+        {
+            var tile = MainTilemap.GetTile(pos);
+            if (!(tile == tileBases[TileType.TileGrassy] || tile == tileBases[TileType.TileDirty]))
+            {
+                Debug.Log("Can't take area");
+                return false;
+            }
+        }
+        Debug.Log($"Can take area, tiles are: {MainTilemap.GetTilesBlock(area)}");
         return true;
     }
 
+
     public void TakeArea(BoundsInt area)
     {
+        Debug.Log($"Taking area: {area.position}, Size: {area.size}");
+
         SetTilesBlock(area, TileType.Empty, TempTilemap);
-        SetTilesBlock(area, TileType.Green, MainTilemap);
+
+        foreach (var pos in area.allPositionsWithin)
+        {
+            Debug.Log($"Processing position: {pos}");
+            var tile = MainTilemap.GetTile(pos);
+            if (tile == tileBases[TileType.TileGrassy])
+            {
+                SetTilesBlock(area, TileType.TileGrassy, MainTilemap);
+                Debug.Log("Set grassy tile.");
+            }
+            else if (tile == tileBases[TileType.TileDirty])
+            {
+                SetTilesBlock(area, TileType.TileDirty, MainTilemap);
+                Debug.Log("Set dirty tile.");
+            }
+        }
     }
+
 }
