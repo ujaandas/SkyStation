@@ -11,6 +11,8 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     public bool Placed { get; private set; }
     public BoundsInt area;
 
+    private GameObject tilemapRepresentation;
+
     private void Start()
     {
         gridBuildingSystem = GridBuildingSystem.current;
@@ -35,15 +37,22 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         Vector3Int positionInt = GridBuildingSystem.current.gridLayout.LocalToCell(transform.position);
         BoundsInt areaTemp = area;
         areaTemp.position = positionInt;
-        image.transform.position = Camera.main.WorldToScreenPoint(GridBuildingSystem.current.gridLayout.CellToWorld(areaTemp.position));
 
         Placed = true;
         GridBuildingSystem.current.TakeArea(areaTemp);
 
         // Log position and placement for debugging
         Debug.Log($"Placed building at: {positionInt}, Bounds: {areaTemp}");
-    }
 
+        // Instantiate a tilemap representation
+        if (tilemapRepresentation == null)
+        {
+            tilemapRepresentation = new GameObject("TilemapRepresentation");
+            SpriteRenderer sr = tilemapRepresentation.AddComponent<SpriteRenderer>();
+            sr.sprite = image.sprite;
+            tilemapRepresentation.transform.position = GridBuildingSystem.current.gridLayout.CellToWorld(areaTemp.position);
+        }
+    }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
@@ -63,24 +72,20 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         // Convert the world position to a cell position
         Vector3Int cellPosition = gridBuildingSystem.gridLayout.WorldToCell(worldPosition);
 
-        // Snap the draggable item to the cell position
-        Vector3 snappedPosition = gridBuildingSystem.gridLayout.CellToWorld(cellPosition);
-        snappedPosition.z = 0; // Ensure z-position is set correctly
-        transform.position = snappedPosition;
+        // Calculate the new position with the offset
+        Vector3 newPosition = gridBuildingSystem.gridLayout.CellToWorld(cellPosition);
 
-        // Update the area position
+        transform.position = newPosition;
         area.position = cellPosition;
 
         // Update the position of the associated image
-        image.transform.position = Camera.main.WorldToScreenPoint(snappedPosition);
+        image.transform.position = Camera.main.WorldToScreenPoint(newPosition);
 
-        Debug.Log($"Mouse position: {Input.mousePosition}, World position: {worldPosition}, Cell position: {cellPosition}, Snapped position: {snappedPosition}");
+        Debug.Log($"Mouse position: {Input.mousePosition}, World position: {worldPosition}, Cell position: {cellPosition}, New position: {newPosition}");
 
         // Follow with TempTiles
         gridBuildingSystem.FollowBuilding(this);
     }
-
-
 
     public void OnEndDrag(PointerEventData eventData)
     {
@@ -97,6 +102,18 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
             {
                 gridBuildingSystem.PlaceBuilding(cellPos, this);
                 Destroy(gameObject);
+
+                // Instantiate a new GameObject to represent the item in the Tilemap
+                if (tilemapRepresentation == null)
+                {
+                    tilemapRepresentation = new GameObject("TilemapRepresentation");
+                    SpriteRenderer sr = tilemapRepresentation.AddComponent<SpriteRenderer>();
+                    sr.sprite = image.sprite;
+
+                    // Center the tilemap representation as well
+                    tilemapRepresentation.transform.position = gridBuildingSystem.gridLayout.CellToWorld(area.position) +
+                                                              gridBuildingSystem.gridLayout.cellSize / 2;
+                }
             }
         }
 
@@ -107,6 +124,7 @@ public class DraggableItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         // Clear the current draggable item in the grid building system
         gridBuildingSystem.ClearArea(gridBuildingSystem.PrevArea);
     }
+
 
     private bool IsPointerOverGrid()
     {
