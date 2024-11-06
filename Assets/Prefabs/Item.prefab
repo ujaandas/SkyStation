@@ -90,3 +90,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   image: {fileID: 1219485358407953550}
   parentAfterDrag: {fileID: 0}
+  area:
+    m_Position: {x: 0, y: 0, z: 0}
+    m_Size: {x: 0, y: 0, z: 0}

@@ -1,12 +1,16 @@
 using System.Collections.Generic;
-using UnityEditor.PackageManager.Requests;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
-using Quaternion = UnityEngine.Quaternion; 
+using Quaternion = UnityEngine.Quaternion;
 
-// Implements singleton pattern
+public enum TileType
+{
+    Empty,
+    White,
+    Green,
+    Red,
+}
+
 public class GridBuildingSystem : MonoBehaviour
 {
     public static GridBuildingSystem current;
@@ -16,175 +20,154 @@ public class GridBuildingSystem : MonoBehaviour
 
     private static Dictionary<TileType, TileBase> tileBases = new Dictionary<TileType, TileBase>();
 
-    private Building temp;
-    private Vector3 prevPos;
-    private BoundsInt prevArea;
-    private bool isDragging = false;
+    public BoundsInt PrevArea
+    {
+        get; private set;
+    }
 
-    #region Unity Methods
     private void Awake()
     {
-        // Set current to this instance
         current = this;
     }
 
     private void Start()
     {
-        // Initialize grid
         string tilePath = @"Tiles/";
         tileBases.Add(TileType.Empty, null);
         tileBases.Add(TileType.White, Resources.Load<TileBase>(tilePath + "TileWhite"));
         tileBases.Add(TileType.Green, Resources.Load<TileBase>(tilePath + "TileGreen"));
         tileBases.Add(TileType.Red, Resources.Load<TileBase>(tilePath + "TileRed"));
-    }
 
-    private void Update()
-    {
-        if (!temp) return;
+        Debug.Log(MainTilemap == null ? "MainTilemap is null" : "MainTilemap is properly assigned");
+        Debug.Log(TempTilemap == null ? "TempTilemap is null" : "TempTilemap is properly assigned");
 
-        // Start dragging
-        if (Input.GetMouseButtonDown(0))
+        if (MainTilemap != null)
         {
-            if (EventSystem.current.IsPointerOverGameObject(0)) {
-                return;
-            }
-
-            isDragging = true;
-        }
-        // End dragging and place object
-        else if (Input.GetMouseButtonUp(0) && isDragging)
-        {
-            if (!temp.Placed)
+            foreach (var pos in MainTilemap.cellBounds.allPositionsWithin)
             {
-                if (temp.CanBePlaced())
+                if (MainTilemap.HasTile(pos))
                 {
-                    temp.Place();
+                    Debug.Log($"Tile at {pos}: {MainTilemap.GetTile(pos)}");
                 }
             }
-            isDragging = false; // Stop dragging
-        }
-        // Cancel dragging
-        else if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            ClearArea();
-            Destroy(temp.gameObject);
-            isDragging = false;
-        }
-
-        // Update position while dragging
-        if (isDragging && !temp.Placed)
-        {
-            Vector2 touchPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector3Int cellPos = gridLayout.LocalToCell(touchPos);
-
-            if (prevPos != cellPos)
-            {
-                temp.transform.localPosition = gridLayout.CellToLocalInterpolated(cellPos + new Vector3(.5f, .5f, .5f));
-                prevPos = cellPos;
-                FollowBuilding();
-            }
         }
     }
-    #endregion
 
-    #region Tilemap Management
-    private static void FillTiles(TileBase[] arr, TileType type) {
-        for (int i = 0; i < arr.Length; i++) {
+    private static void FillTiles(TileBase[] arr, TileType type)
+    {
+        for (int i = 0; i < arr.Length; i++)
+        {
             arr[i] = tileBases[type];
         }
     }
 
-    private static TileBase[] GetTilesBlock(BoundsInt area, Tilemap tilemap) {
+    private static TileBase[] GetTilesBlock(BoundsInt area, Tilemap tilemap)
+    {
         TileBase[] array = new TileBase[area.size.x * area.size.y * area.size.z];
         int counter = 0;
 
-        foreach (var v in area.allPositionsWithin) {
+        foreach (var v in area.allPositionsWithin)
+        {
             Vector3Int pos = new Vector3Int(v.x, v.y, 0);
-            
-            if (tilemap.HasTile(pos)) {
+
+            if (tilemap.HasTile(pos))
+            {
+                // Debug.Log($"Tile at {pos} is {tilemap.GetTile(pos)}");
                 array[counter] = tilemap.GetTile(pos);
-            } else {
-                array[counter] = null; // Handle out-of-bounds or uninitialized tiles
             }
-            
+            else
+            {
+                // Debug.Log($"Tile at {pos} is null");
+                array[counter] = null;
+            }
+
             counter++;
         }
 
         return array;
     }
 
-    private static void SetTilesBlock(BoundsInt area, TileType type, Tilemap tilemap) {
+    private static void SetTilesBlock(BoundsInt area, TileType type, Tilemap tilemap)
+    {
         int size = area.size.x * area.size.y * area.size.z;
         TileBase[] tileArray = new TileBase[size];
         FillTiles(tileArray, type);
         tilemap.SetTilesBlock(area, tileArray);
     }
-    #endregion
 
-    #region Building Placement
-    public void InitializeWithBuilding(GameObject building) {
-        temp = Instantiate(building, Vector3.zero, Quaternion.identity).GetComponent<Building>();
-        FollowBuilding();
-    }
-
-    private void ClearArea() {
-        TileBase[] toClear = new TileBase[prevArea.size.x * prevArea.size.y * prevArea.size.z];
-        FillTiles(toClear, TileType.Empty);
-        TempTilemap.SetTilesBlock(prevArea, toClear);
-    }
-
-    private void FollowBuilding() {
-    ClearArea();
-    temp.area.position = gridLayout.WorldToCell(temp.gameObject.transform.position);
-    BoundsInt buildingArea = temp.area;
-
-    TileBase[] baseArray = GetTilesBlock(buildingArea, MainTilemap);
-    
-    int size = baseArray.Length;
-    TileBase[] tileArray = new TileBase[size];
-
-    for (int i = 0; i < size; i++)
+    public void PlaceBuilding(Vector3Int cellPos, DraggableItem item)
     {
-        Debug.Log(baseArray[i]);
-        if (baseArray[i] == tileBases[TileType.White])
-        {
-            tileArray[i] = tileBases[TileType.Green];
-        }
-        else
-        {
-            FillTiles(tileArray, TileType.Red);
-            break;
-        }
-    }
+        // Ensure the position is correct and log it
+        Vector3 worldPosition = gridLayout.CellToWorld(cellPos);
+        Debug.Log($"Placing building at cell position: {cellPos}, world position: {worldPosition}");
 
-    TempTilemap.SetTilesBlock(buildingArea, tileArray);
-    prevArea = buildingArea;
+        GameObject buildingPrefab = item.gameObject;
+
+        // Instantiate the building and log its position
+        DraggableItem newBuilding = Instantiate(buildingPrefab, worldPosition, Quaternion.identity).GetComponent<DraggableItem>();
+        Debug.Log($"New building instantiated at: {newBuilding.transform.position} with area: {newBuilding.area} and image position: {newBuilding.image.transform.position}");
+
+        newBuilding.Place();
     }
 
 
-    public bool CanTakeArea(BoundsInt area) {
-        TileBase[] baseArray = GetTilesBlock(area, MainTilemap);
-        foreach (var tile in baseArray) {
-            if (tile != tileBases[TileType.White]) {
-                Debug.Log("Can't take area");
-                return false;
+    public void ClearArea(BoundsInt area)
+    {
+        TileBase[] toClear = new TileBase[area.size.x * area.size.y * area.size.z];
+        FillTiles(toClear, TileType.Empty);
+        TempTilemap.SetTilesBlock(area, toClear);
+    }
+
+    public void FollowBuilding(DraggableItem draggableItem)
+    {
+        ClearArea(PrevArea);
+
+        BoundsInt buildingArea = draggableItem.area;
+        TileBase[] baseArray = GetTilesBlock(buildingArea, MainTilemap);
+        int size = baseArray.Length;
+        TileBase[] tileArray = new TileBase[size];
+
+        bool canPlace = true;
+        for (int i = 0; i < size; i++)
+        {
+            if (baseArray[i] == tileBases[TileType.White])
+            {
+                tileArray[i] = tileBases[TileType.Green];
+            }
+            else
+            {
+                canPlace = false;
+                break;
             }
         }
 
+        if (!canPlace)
+        {
+            FillTiles(tileArray, TileType.Red);
+        }
+
+        TempTilemap.SetTilesBlock(buildingArea, tileArray);
+        PrevArea = buildingArea;
+    }
+
+    public bool CanTakeArea(BoundsInt area)
+    {
+        TileBase[] baseArray = GetTilesBlock(area, MainTilemap);
+        foreach (var tile in baseArray)
+        {
+            if (tile != tileBases[TileType.White])
+            {
+                Debug.Log($"Can't take area, {tile} is not white");
+                return false;
+            }
+        }
+        Debug.Log("Can take area");
         return true;
     }
 
-    public void TakeArea(BoundsInt area) {
+    public void TakeArea(BoundsInt area)
+    {
         SetTilesBlock(area, TileType.Empty, TempTilemap);
         SetTilesBlock(area, TileType.Green, MainTilemap);
     }
-
-    #endregion
-}
-
-public enum TileType {
-    Empty,
-    White,
-    Green,
-    Red,
 }
