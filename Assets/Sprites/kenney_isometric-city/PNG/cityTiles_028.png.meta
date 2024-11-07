@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      cityTiles_028_0: 3396285242208658356
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
