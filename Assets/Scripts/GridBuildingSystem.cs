@@ -70,12 +70,11 @@ public class GridBuildingSystem : MonoBehaviour
         ClearArea(PrevArea);
         var baseArray = GetTilesBlock(draggableItem.area, MainTilemap);
         var tileArray = new TileBase[baseArray.Length];
-        // var canPlace = true;
 
         bool canPlace = true;
         for (int i = 0; i < baseArray.Length; i++)
         {
-            Debug.Log($"Currently processing tile: {baseArray[i]}");
+            Debug.Log($"Currently processing tile: {baseArray[i]} against {tileBases[TileType.TileGrassy]} and {tileBases[TileType.TileDirty]}");
             if (baseArray[i] == tileBases[TileType.TileGrassy])
             {
                 tileArray[i] = tileBases[TileType.TileGrassyGreen];
