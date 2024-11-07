@@ -540,6 +540,7 @@ GameObject:
   - component: {fileID: 285869691}
   - component: {fileID: 285869690}
   - component: {fileID: 285869689}
+  - component: {fileID: 285869692}
   m_Layer: 5
   m_Name: Shop Button
   m_TagString: Untagged
@@ -660,6 +661,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 285869687}
   m_CullTransparentMesh: 1
+--- !u!114 &285869692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 285869687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8584cc735a33d4e4293f53a90c4fb78f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Panel:
+  - {fileID: 839895829}
+  - {fileID: 1425623354}
 --- !u!1 &307433859
 GameObject:
   m_ObjectHideFlags: 0
@@ -1669,6 +1685,7 @@ GameObject:
   - component: {fileID: 1006915894}
   - component: {fileID: 1006915893}
   - component: {fileID: 1006915892}
+  - component: {fileID: 1006915895}
   m_Layer: 5
   m_Name: Achievements Button
   m_TagString: Untagged
@@ -1789,6 +1806,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1006915890}
   m_CullTransparentMesh: 1
+--- !u!114 &1006915895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1006915890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8584cc735a33d4e4293f53a90c4fb78f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Panel:
+  - {fileID: 185878011}
 --- !u!1 &1222079798
 GameObject:
   m_ObjectHideFlags: 0
@@ -2818,6 +2849,7 @@ GameObject:
   - component: {fileID: 1941978962}
   - component: {fileID: 1941978961}
   - component: {fileID: 1941978960}
+  - component: {fileID: 1941978963}
   m_Layer: 5
   m_Name: Inventory Button
   m_TagString: Untagged
@@ -2938,6 +2970,20 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+--- !u!114 &1941978963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1941978958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8584cc735a33d4e4293f53a90c4fb78f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Panel:
+  - {fileID: 655989981}
 --- !u!1 &2055830582
 GameObject:
   m_ObjectHideFlags: 0
