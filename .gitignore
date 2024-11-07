@@ -1,7 +1,7 @@
 # This .gitignore file should be placed at the root of your Unity project directory
 # First part from https://github.com/github/gitignore/blob/master/Unity.gitignore
 # Parkerhill additions at the end
-
+.vscode/
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
