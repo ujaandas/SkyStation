@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      landscapeTiles_126_0: -1253240379963061740
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
