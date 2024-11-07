@@ -141,4 +141,5 @@ $RECYCLE.BIN/
 PackageBackups/
 
 # UWP builds
-/UWP/*
+/UWP/**.png
+/PNG/*
